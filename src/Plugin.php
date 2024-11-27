@@ -5,7 +5,6 @@ namespace fostercommerce\honeypot;
 use Craft;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
-use craft\helpers\App;
 use craft\web\Application;
 use craft\web\Request;
 use craft\web\Response;
@@ -23,6 +22,11 @@ class Plugin extends BasePlugin
 	 * @var string[]
 	 */
 	private const LOG_LEVELS = ['debug', 'info', 'error', 'warning'];
+
+	/**
+	 * @var int
+	 */
+	private const DEFAULT_TIMETRAP_TIMEOUT = 2000;
 
 	public bool $hasCpSettings = true;
 
@@ -58,18 +62,65 @@ class Plugin extends BasePlugin
 				$request = Craft::$app->getRequest();
 				if ($request->getIsPost() || $request->getIsPut()) {
 					$settings = $this->getSettings();
-					$honeypotValue = $request->getBodyParam($settings->honeypotFieldName);
-					if ($honeypotValue === null) {
-						// A bot simply has to remove the input field altogether to bypass this check.
+
+					$honeypotValue = null;
+					$timetrapValue = null;
+
+					if ($settings->honeypotFieldName !== null) {
+						$honeypotValue = $request->getBodyParam($settings->honeypotFieldName);
+					}
+
+					if ($settings->timetrapFieldName !== null) {
+						/** @var ?string $timetrapValue */
+						$timetrapValue = $request->getBodyParam($settings->timetrapFieldName);
+					}
+
+					if ($honeypotValue === null && $timetrapValue === null) {
+						// A bot simply has to remove the input fields altogether to bypass this check.
 						return;
 					}
 
+					$isSpamSubmission = false;
+					$spamReasons = [];
+
+					if ($timetrapValue !== null) {
+						$timetrapValue = base64_decode($timetrapValue, true);
+						$timetrapValue = Craft::$app->getSecurity()->decryptByKey($timetrapValue);
+						if ($timetrapValue === false) {
+							// Timetrap value was tampered with. Mark as spam.
+							$isSpamSubmission = true;
+							$spamReasons[] = 'Tampered timetrap value';
+						}
+
+						$timetrapValue = (int) $timetrapValue;
+
+						if (! $isSpamSubmission) {
+							$currentTimestamp = (new \DateTimeImmutable())->format('Uv');
+
+							if ($currentTimestamp - $timetrapValue <= (int) ($settings->timetrapTimeout ?? self::DEFAULT_TIMETRAP_TIMEOUT)) {
+								$isSpamSubmission = true;
+								$spamReasons[] = 'Form submission was quicker than timeout value';
+							}
+						}
+					}
+
 					if (! empty($honeypotValue)) {
+						$isSpamSubmission = true;
+						$spamReasons[] = 'Honeypot value was set';
+					}
+
+					if ($isSpamSubmission) {
 						if ($settings->logSpamSubmissions !== false) {
 							$userIp = $request->getUserIP();
 							$userAgent = $request->getUserAgent();
 							$action = implode('/', $request->getActionSegments());
-							$message = sprintf('Spam submission blocked. IP: %s, Action: %s, User Agent: %s', $userIp, $action, $userAgent);
+							$message = sprintf(
+								'Spam submission blocked. Reasons: %s, IP: %s, Action: %s, User Agent: %s',
+								implode('; ', $spamReasons),
+								$userIp,
+								$action,
+								$userAgent
+							);
 
 							if (in_array($settings->logSpamSubmissions, self::LOG_LEVELS, true)) {
 								Craft::{$settings->logSpamSubmissions}($message);
@@ -78,14 +129,12 @@ class Plugin extends BasePlugin
 							}
 						}
 
-						if ($settings->spamDetectedResponse !== false || App::devMode()) {
-							/** @var Response $response */
-							$response = Craft::$app->getResponse();
-							if ($settings->spamDetectedResponse !== false && is_string($settings->spamDetectedResponse)) {
-								$response->content = $settings->spamDetectedResponse;
-							} else {
-								$response->content = 'Spam submission detected';
-							}
+						/** @var Response $response */
+						$response = Craft::$app->getResponse();
+						if ($settings->spamDetectedRedirect !== null) {
+							$response->redirect($settings->spamDetectedRedirect);
+						} elseif ($settings->spamDetectedResponse !== null) {
+							$response->content = $settings->spamDetectedResponse;
 						}
 
 						Craft::$app->end();

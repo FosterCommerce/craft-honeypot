@@ -13,12 +13,23 @@ return [
 	 */
 	'honeypotFieldName' => 'my_password',
 
+	'timeTrapFieldName' => 'honeypot_timetrap',
+
+	'timeTrapTimeout' => 2000,
+
 	/**
-	 * `false` to disable responses on non-dev environments.
+	 * Set to a string value to enable a response on non-dev environment.
 	 *
-	 * Set to a string value to enable a response on non-dev environment.s
+	 * Setting {@see spamDetectedRedirect} will override this value.
 	 */
 	'spamDetectedResponse' => 'Spam submission recorded',
+
+	/**
+	 * Set to a path to enable redirecting a client if their submission is flagged as spam.
+	 *
+	 * Setting this will override {@see spamDetectedResponse}.
+	 */
+	'spamDetectedRedirect' => '/to/the/naughty/corner',
 
 	/**
 	 * Whether to log every spam submission.
