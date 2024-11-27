@@ -11,6 +11,8 @@ use craft\web\Response;
 use fostercommerce\honeypot\models\Settings;
 use fostercommerce\honeypot\web\twig\Honeypot;
 use yii\base\Event;
+use yii\base\Exception;
+use yii\base\InvalidConfigException;
 
 /**
  * @method static Plugin getInstance()
@@ -52,6 +54,21 @@ class Plugin extends BasePlugin
 		]);
 	}
 
+	/**
+	 * @throws Exception
+	 * @throws InvalidConfigException
+	 */
+	private function decodeTimestamp(string $value): false|int
+	{
+		$value = base64_decode($value, true);
+		if ($value === false) {
+			return false;
+		}
+
+		$value = Craft::$app->getSecurity()->decryptByKey($value);
+		return (int) $value;
+	}
+
 	private function attachEventHandlers(): void
 	{
 		Event::on(
@@ -84,15 +101,12 @@ class Plugin extends BasePlugin
 					$spamReasons = [];
 
 					if ($timetrapValue !== null) {
-						$timetrapValue = base64_decode($timetrapValue, true);
-						$timetrapValue = Craft::$app->getSecurity()->decryptByKey($timetrapValue);
+						$timetrapValue = $this->decodeTimestamp($timetrapValue);
 						if ($timetrapValue === false) {
 							// Timetrap value was tampered with. Mark as spam.
 							$isSpamSubmission = true;
 							$spamReasons[] = 'Tampered timetrap value';
 						}
-
-						$timetrapValue = (int) $timetrapValue;
 
 						if (! $isSpamSubmission) {
 							$currentTimestamp = (new \DateTimeImmutable())->format('Uv');
