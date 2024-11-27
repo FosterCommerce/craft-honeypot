@@ -8,6 +8,7 @@ use craft\base\Plugin as BasePlugin;
 use craft\helpers\App;
 use craft\web\Application;
 use craft\web\Request;
+use craft\web\Response;
 use fostercommerce\honeypot\models\Settings;
 use fostercommerce\honeypot\web\twig\Honeypot;
 use yii\base\Event;
@@ -78,16 +79,16 @@ class Plugin extends BasePlugin
 						}
 
 						if ($settings->spamDetectedResponse !== false || App::devMode()) {
-							ob_start();
-
-							if ($settings->spamDetectedResponse !== false) {
-								echo $settings->spamDetectedResponse;
+							/** @var Response $response */
+							$response = Craft::$app->getResponse();
+							if ($settings->spamDetectedResponse !== false && is_string($settings->spamDetectedResponse)) {
+								$response->content = $settings->spamDetectedResponse;
 							} else {
-								echo 'Spam submission detected';
+								$response->content = 'Spam submission detected';
 							}
 						}
 
-						exit(0);
+						Craft::$app->end();
 					}
 				}
 			}
