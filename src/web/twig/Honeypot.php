@@ -21,30 +21,54 @@ class Honeypot extends AbstractExtension
 						return false;
 					}
 
-					$inputs = [];
+					$idPrefix = Craft::$app->getSecurity()->generateRandomString(12);
 
-					if ($settings->timetrapFieldName !== null) {
-						$timestamp = (new \DateTimeImmutable())->format('Uv');
-						$inputs[] = Html::hiddenInput(
-							$settings->timetrapFieldName,
-							base64_encode(Craft::$app->getSecurity()->encryptByKey((string) $timestamp)),
-							[
-								'id' => $settings->timetrapFieldName,
-							]
-						);
-					}
+					$inputs = [];
 
 					if ($settings->honeypotFieldName !== null) {
 						$inputs[] = Html::textInput(
 							$settings->honeypotFieldName,
 							'',
 							[
-								'id' => $settings->honeypotFieldName,
+								'id' => sprintf('%s_%s', $idPrefix, $settings->honeypotFieldName),
 								'autocomplete' => 'off',
 								'tabindex' => '-1',
 								'style' => 'display:none; visibility:hidden; position:absolute; left:-9999px;',
 							],
 						);
+					}
+
+					if ($settings->timetrapFieldName !== null) {
+						$timestamp = (new \DateTimeImmutable())->format('Uv');
+						$inputs[] = Html::hiddenInput(
+							$settings->timetrapFieldName,
+							base64_encode(Craft::$app->getSecurity()->encryptByKey($timestamp)),
+							[
+								'id' => sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName),
+							],
+						);
+					}
+
+					if ($settings->jsHoneypotFieldName !== null) {
+						$jsInputId = sprintf('%s_%s', $idPrefix, $settings->jsHoneypotFieldName);
+						$inputs[] = Html::hiddenInput(
+							$settings->jsHoneypotFieldName,
+							'',
+							[
+								'id' => $jsInputId,
+							],
+						);
+
+						$jsTimeout = $settings->jsHoneypotTimeout ?? Plugin::DEFAULT_JS_TIMEOUT;
+						$jsVerifiedText = Plugin::DEFAULT_JS_TEXT; // TODO add config for this
+
+						$inputs[] = <<<EOJS
+<script type="text/javascript">
+	setTimeout(function () {
+		document.getElementById('{$jsInputId}').value = '{$jsVerifiedText}';
+	}, {$jsTimeout});
+</script>
+EOJS;
 					}
 
 					return implode('', $inputs);

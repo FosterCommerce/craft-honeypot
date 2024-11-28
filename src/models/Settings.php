@@ -31,6 +31,16 @@ class Settings extends Model
 	public null|int|string $timetrapTimeout = 2000;
 
 	/**
+	 * If set, a hidden input field will be included and extra JavaScript to set the value after a timeout ({@see jsHoneypotTimeout})
+	 */
+	public ?string $jsHoneypotFieldName = 'verified_submission';
+
+	/**
+	 * The timeout to be used before the hidden input field is set on the client.
+	 */
+	public null|int|string $jsHoneypotTimeout = 2000;
+
+	/**
 	 * Set to a string value to enable a response on non-dev environment.
 	 *
 	 * Setting {@see spamDetectedRedirect} will override this value.

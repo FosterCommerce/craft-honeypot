@@ -21,14 +21,24 @@ use yii\base\InvalidConfigException;
 class Plugin extends BasePlugin
 {
 	/**
-	 * @var string[]
+	 * @var int
 	 */
-	private const LOG_LEVELS = ['debug', 'info', 'error', 'warning'];
+	public const DEFAULT_TIMETRAP_TIMEOUT = 2000;
 
 	/**
 	 * @var int
 	 */
-	private const DEFAULT_TIMETRAP_TIMEOUT = 2000;
+	public const DEFAULT_JS_TIMEOUT = 2000;
+
+	/**
+	 * @var string
+	 */
+	public const DEFAULT_JS_TEXT = 'verified';
+
+	/**
+	 * @var string[]
+	 */
+	private const LOG_LEVELS = ['debug', 'info', 'error', 'warning'];
 
 	public bool $hasCpSettings = true;
 
@@ -82,6 +92,7 @@ class Plugin extends BasePlugin
 
 					$honeypotValue = null;
 					$timetrapValue = null;
+					$jsHoneypotValue = null;
 
 					if ($settings->honeypotFieldName !== null) {
 						$honeypotValue = $request->getBodyParam($settings->honeypotFieldName);
@@ -92,7 +103,12 @@ class Plugin extends BasePlugin
 						$timetrapValue = $request->getBodyParam($settings->timetrapFieldName);
 					}
 
-					if ($honeypotValue === null && $timetrapValue === null) {
+					if ($settings->jsHoneypotFieldName !== null) {
+						/** @var ?string $jsHoneypotValue */
+						$jsHoneypotValue = $request->getBodyParam($settings->jsHoneypotFieldName);
+					}
+
+					if ($honeypotValue === null && $timetrapValue === null && $jsHoneypotValue === null) {
 						// A bot simply has to remove the input fields altogether to bypass this check.
 						return;
 					}
@@ -100,6 +116,13 @@ class Plugin extends BasePlugin
 					$isSpamSubmission = false;
 					$spamReasons = [];
 
+					// Honeypot test
+					if (! empty($honeypotValue)) {
+						$isSpamSubmission = true;
+						$spamReasons[] = 'Honeypot value was set';
+					}
+
+					// Timetrap test
 					if ($timetrapValue !== null) {
 						$timetrapValue = $this->decodeTimestamp($timetrapValue);
 						if ($timetrapValue === false) {
@@ -118,9 +141,10 @@ class Plugin extends BasePlugin
 						}
 					}
 
-					if (! empty($honeypotValue)) {
+					// Js honeypot test
+					if ($jsHoneypotValue !== null && $jsHoneypotValue !== self::DEFAULT_JS_TEXT) {
 						$isSpamSubmission = true;
-						$spamReasons[] = 'Honeypot value was set';
+						$spamReasons[] = 'JavaScript honeypot value was not set';
 					}
 
 					if ($isSpamSubmission) {

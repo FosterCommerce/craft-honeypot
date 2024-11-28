@@ -11,11 +11,31 @@ return [
 	 *
 	 * This should be unique so that it does not conflict with any of your form inputs.
 	 */
-	'honeypotFieldName' => 'my_password',
+	'honeypotFieldName' => 'set_my_password',
 
-	'timeTrapFieldName' => 'honeypot_timetrap',
+	/**
+	 * If set, the honeypot will include a timetrap field.
+	 *
+	 *  This should be unique so that it does not conflict with any of your form inputs.
+	 */
+	'timetrapFieldName' => 'honeypot_timetrap',
 
-	'timeTrapTimeout' => 2000,
+	/**
+	 * The timeout to be used with the timetrap.
+	 */
+	'timetrapTimeout' => 2000,
+
+	/**
+	 * If set, a hidden input field will be included and extra JavaScript to set the value after a timeout ({@see jsHoneypotTimeout})
+	 *
+	 * This should be unique so that it does not conflict with any of your form inputs.
+	 */
+	'jsHoneypotFieldName' => 'verified_submission',
+
+	/**
+	 * The timeout to be used before the hidden input field is set on the client.
+	 */
+	'jsHoneypotTimeout' => 2000,
 
 	/**
 	 * Set to a string value to enable a response on non-dev environment.
