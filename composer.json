@@ -2,7 +2,7 @@
 	"name": "fostercommerce/craft-honeypot",
 	"type": "craft-plugin",
 	"license": "proprietary",
-	"version": "1.0.0-beta.3",
+	"version": "1.0.0-beta.4",
 	"support": {
 		"email": "support@fostercommerce.com",
 		"issues": "https://github.com/fostercommerce/craft-honeypot/issues?state=open",
