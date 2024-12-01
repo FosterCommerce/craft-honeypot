@@ -8,12 +8,12 @@ use craft\base\Plugin as BasePlugin;
 use craft\web\Application;
 use craft\web\Request;
 use craft\web\Response;
-use craft\web\View;
 use fostercommerce\honeypot\models\Settings;
 use fostercommerce\honeypot\web\twig\Honeypot;
 use yii\base\Event;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
+use yii\web\BadRequestHttpException;
 
 /**
  * @method static Plugin getInstance()
@@ -149,25 +149,24 @@ class Plugin extends BasePlugin
 							}
 						}
 
+						if ($settings->spamDetectedRedirect === null && $settings->spamDetectedTemplate === null) {
+							$firstReason = reset($spamReasons);
+							throw new BadRequestHttpException(sprintf('Invalid form submission: %s', $firstReason));
+						}
+
 						/** @var Response $response */
 						$response = Craft::$app->getResponse();
 						if ($settings->spamDetectedRedirect !== null) {
 							$response->redirect($settings->spamDetectedRedirect);
 						} else {
-							$data = [
+							/** @var string $template */
+							$template = $settings->spamDetectedTemplate;
+							$response->content = Craft::$app->view->renderTemplate($template, [
 								'reasons' => $spamReasons,
 								'action' => $action,
 								'ip' => $userIp,
 								'userAgent' => $userAgent,
-							];
-							if ($settings->spamDetectedTemplate !== null) {
-								$rendered = Craft::$app->view->renderTemplate($settings->spamDetectedTemplate, $data);
-							} else {
-								Craft::$app->view->setTemplateMode(View::TEMPLATE_MODE_CP);
-								$rendered = Craft::$app->view->renderTemplate('honeypot/_spam.twig', $data);
-							}
-
-							$response->content = $rendered;
+							]);
 						}
 
 						Craft::$app->end();
