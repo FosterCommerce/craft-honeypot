@@ -40,35 +40,36 @@ class Honeypot extends AbstractExtension
 
 					if ($settings->timetrapFieldName !== null) {
 						$timestamp = (new \DateTimeImmutable())->format('Uv');
-						$inputs[] = Html::hiddenInput(
-							$settings->timetrapFieldName,
-							base64_encode(Craft::$app->getSecurity()->encryptByKey($timestamp)),
-							[
-								'id' => sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName),
-							],
-						);
-					}
+						$encryptedTimestamp = base64_encode(Craft::$app->getSecurity()->encryptByKey($timestamp));
 
-					if ($settings->jsHoneypotFieldName !== null) {
-						$jsInputId = sprintf('%s_%s', $idPrefix, $settings->jsHoneypotFieldName);
-						$inputs[] = Html::hiddenInput(
-							$settings->jsHoneypotFieldName,
-							'',
-							[
-								'id' => $jsInputId,
-							],
-						);
+						if ($settings->setTimetrapWithJs) {
+							$jsInputId = sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName);
+							$inputs[] = Html::hiddenInput(
+								$settings->timetrapFieldName,
+								'',
+								[
+									'id' => $jsInputId,
+								],
+							);
 
-						$jsTimeout = $settings->jsHoneypotTimeout ?? Plugin::DEFAULT_JS_TIMEOUT;
-						$jsVerifiedText = Plugin::DEFAULT_JS_TEXT; // TODO add config for this
+							$jsTimeout = $settings->jsTimeout ?? Plugin::DEFAULT_JS_TIMEOUT;
 
-						$inputs[] = <<<EOJS
+							$inputs[] = <<<EOJS
 <script type="text/javascript">
 	setTimeout(function () {
-		document.getElementById('{$jsInputId}').value = '{$jsVerifiedText}';
+		document.getElementById('{$jsInputId}').value = '{$encryptedTimestamp}';
 	}, {$jsTimeout});
 </script>
 EOJS;
+						} else {
+							$inputs[] = Html::hiddenInput(
+								$settings->timetrapFieldName,
+								$encryptedTimestamp,
+								[
+									'id' => sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName),
+								],
+							);
+						}
 					}
 
 					return implode('', $inputs);

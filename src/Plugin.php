@@ -8,6 +8,7 @@ use craft\base\Plugin as BasePlugin;
 use craft\web\Application;
 use craft\web\Request;
 use craft\web\Response;
+use craft\web\View;
 use fostercommerce\honeypot\models\Settings;
 use fostercommerce\honeypot\web\twig\Honeypot;
 use yii\base\Event;
@@ -40,8 +41,6 @@ class Plugin extends BasePlugin
 	 */
 	private const LOG_LEVELS = ['debug', 'info', 'error', 'warning'];
 
-	public bool $hasCpSettings = true;
-
 	public function init(): void
 	{
 		parent::init();
@@ -56,14 +55,6 @@ class Plugin extends BasePlugin
 		return Craft::createObject(Settings::class);
 	}
 
-	protected function settingsHtml(): ?string
-	{
-		return Craft::$app->view->renderTemplate('honeypot/_settings.twig', [
-			'plugin' => $this,
-			'settings' => $this->getSettings(),
-		]);
-	}
-
 	/**
 	 * @throws Exception
 	 * @throws InvalidConfigException
@@ -76,6 +67,10 @@ class Plugin extends BasePlugin
 		}
 
 		$value = Craft::$app->getSecurity()->decryptByKey($value);
+		if ($value === false) {
+			return false;
+		}
+
 		return (int) $value;
 	}
 
@@ -92,23 +87,15 @@ class Plugin extends BasePlugin
 
 					$honeypotValue = null;
 					$timetrapValue = null;
-					$jsHoneypotValue = null;
 
 					if ($settings->honeypotFieldName !== null) {
 						$honeypotValue = $request->getBodyParam($settings->honeypotFieldName);
 					}
 
-					if ($settings->timetrapFieldName !== null) {
-						/** @var ?string $timetrapValue */
-						$timetrapValue = $request->getBodyParam($settings->timetrapFieldName);
-					}
+					/** @var ?string $timetrapValue */
+					$timetrapValue = $request->getBodyParam($settings->timetrapFieldName);
 
-					if ($settings->jsHoneypotFieldName !== null) {
-						/** @var ?string $jsHoneypotValue */
-						$jsHoneypotValue = $request->getBodyParam($settings->jsHoneypotFieldName);
-					}
-
-					if ($honeypotValue === null && $timetrapValue === null && $jsHoneypotValue === null) {
+					if ($honeypotValue === null && $timetrapValue === null) {
 						// A bot simply has to remove the input fields altogether to bypass this check.
 						return;
 					}
@@ -141,17 +128,12 @@ class Plugin extends BasePlugin
 						}
 					}
 
-					// Js honeypot test
-					if ($jsHoneypotValue !== null && $jsHoneypotValue !== self::DEFAULT_JS_TEXT) {
-						$isSpamSubmission = true;
-						$spamReasons[] = 'JavaScript honeypot value was not set';
-					}
-
 					if ($isSpamSubmission) {
+						$userIp = $request->getUserIP();
+						$userAgent = $request->getUserAgent();
+						$action = implode('/', $request->getActionSegments());
+
 						if ($settings->logSpamSubmissions !== false) {
-							$userIp = $request->getUserIP();
-							$userAgent = $request->getUserAgent();
-							$action = implode('/', $request->getActionSegments());
 							$message = sprintf(
 								'Spam submission blocked. Reasons: %s, IP: %s, Action: %s, User Agent: %s',
 								implode('; ', $spamReasons),
@@ -171,8 +153,21 @@ class Plugin extends BasePlugin
 						$response = Craft::$app->getResponse();
 						if ($settings->spamDetectedRedirect !== null) {
 							$response->redirect($settings->spamDetectedRedirect);
-						} elseif ($settings->spamDetectedResponse !== null) {
-							$response->content = $settings->spamDetectedResponse;
+						} else {
+							$data = [
+								'reasons' => $spamReasons,
+								'action' => $action,
+								'ip' => $userIp,
+								'userAgent' => $userAgent,
+							];
+							if ($settings->spamDetectedTemplate !== null) {
+								$rendered = Craft::$app->view->renderTemplate($settings->spamDetectedTemplate, $data);
+							} else {
+								Craft::$app->view->setTemplateMode(View::TEMPLATE_MODE_CP);
+								$rendered = Craft::$app->view->renderTemplate('honeypot/_spam.twig', $data);
+							}
+
+							$response->content = $rendered;
 						}
 
 						Craft::$app->end();

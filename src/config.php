@@ -16,7 +16,7 @@ return [
 	/**
 	 * If set, the honeypot will include a timetrap field.
 	 *
-	 *  This should be unique so that it does not conflict with any of your form inputs.
+	 * This should be unique so that it does not conflict with any of your form inputs.
 	 */
 	'timetrapFieldName' => 'honeypot_timetrap',
 
@@ -25,24 +25,23 @@ return [
 	 */
 	'timetrapTimeout' => 2000,
 
+
 	/**
-	 * If set, a hidden input field will be included and extra JavaScript to set the value after a timeout ({@see jsHoneypotTimeout})
-	 *
-	 * This should be unique so that it does not conflict with any of your form inputs.
+	 * Whether the timetrap fields value is set using a JS timeout.
 	 */
-	'jsHoneypotFieldName' => 'verified_submission',
+	'setTimetrapWithJs' => true,
 
 	/**
 	 * The timeout to be used before the hidden input field is set on the client.
 	 */
-	'jsHoneypotTimeout' => 2000,
+	'jsTimeout' => 2000,
 
 	/**
 	 * Set to a string value to enable a response on non-dev environment.
 	 *
 	 * Setting {@see spamDetectedRedirect} will override this value.
 	 */
-	'spamDetectedResponse' => 'Spam submission recorded',
+	'spamDetectedTemplate' => 'path/to/spam-template.twig',
 
 	/**
 	 * Set to a path to enable redirecting a client if their submission is flagged as spam.

@@ -18,12 +18,14 @@ class Settings extends Model
 	 *
 	 * If this is null, then no honeypot field will be set.
 	 */
-	public ?string $honeypotFieldName = 'enter_a_password';
+	public ?string $honeypotFieldName = null;
 
 	/**
-	 * If set, the honeypot will include a timetrap field.
+	 * If set, the honeypot will include a hidden timetrap field.
+	 *
+	 * This should be unique so that it does not conflict with any of your form inputs.
 	 */
-	public ?string $timetrapFieldName = 'honeypot_timestamp';
+	public string $timetrapFieldName = 'honeypot_timestamp';
 
 	/**
 	 * The timeout to be used with the timetrap.
@@ -31,21 +33,21 @@ class Settings extends Model
 	public null|int|string $timetrapTimeout = 2000;
 
 	/**
-	 * If set, a hidden input field will be included and extra JavaScript to set the value after a timeout ({@see jsHoneypotTimeout})
+	 * Whether the timetrap fields value is set using a JS timeout.
 	 */
-	public ?string $jsHoneypotFieldName = 'verified_submission';
+	public bool $setTimetrapWithJs = true;
 
 	/**
 	 * The timeout to be used before the hidden input field is set on the client.
 	 */
-	public null|int|string $jsHoneypotTimeout = 2000;
+	public null|int|string $jsTimeout = 2000;
 
 	/**
-	 * Set to a string value to enable a response on non-dev environment.
+	 * Set to a string value to render a template if their submission is flagged as spam.
 	 *
 	 * Setting {@see spamDetectedRedirect} will override this value.
 	 */
-	public ?string $spamDetectedResponse = null;
+	public ?string $spamDetectedTemplate = null;
 
 	/**
 	 * Set to a path to enable redirecting a client if their submission is flagged as spam.
