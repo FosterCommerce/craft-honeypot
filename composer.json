@@ -28,7 +28,7 @@
 	},
 	"extra": {
 		"handle": "honeypot",
-		"name": "honeypot",
+		"name": "Honeypot",
 		"developer": "Foster Commerce",
 		"documentationUrl": "https://github.com/fostercommerce/craft-honeypot"
 	},
