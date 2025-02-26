@@ -131,7 +131,7 @@ class Plugin extends BasePlugin
 					if ($isSpamSubmission) {
 						$userIp = $request->getUserIP();
 						$userAgent = $request->getUserAgent();
-						$action = implode('/', $request->getActionSegments());
+						$action = implode('/', $request->getActionSegments() ?? []);
 
 						if ($settings->logSpamSubmissions !== false) {
 							$message = sprintf(
