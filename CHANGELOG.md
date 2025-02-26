@@ -1,5 +1,5 @@
 # Release Notes for honeypot
 
-## 1.0.0@beta
+## 1.0.0
 
-- Initial beta release
+- Initial release
