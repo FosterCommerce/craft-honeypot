@@ -15,72 +15,69 @@ class Honeypot extends AbstractExtension
 		return [
 			new TwigFunction(
 				'honeypot',
-				[$this, 'render'],
-				[
-					'is_safe' => ['html'],
-				],
-			),
-		];
-	}
+				static function (): false|string {
+					$settings = Plugin::getInstance()->getSettings();
+					if (! $settings->enabled) {
+						return false;
+					}
 
-	public function render(): false|string
-	{
-		$settings = Plugin::getInstance()->getSettings();
-		if (! $settings->enabled) {
-			return false;
-		}
+					$idPrefix = Craft::$app->getSecurity()->generateRandomString(12);
 
-		$idPrefix = Craft::$app->getSecurity()->generateRandomString(12);
+					$inputs = [];
 
-		$inputs = [];
+					if ($settings->honeypotFieldName !== null) {
+						$inputs[] = Html::textInput(
+							$settings->honeypotFieldName,
+							'',
+							[
+								'id' => sprintf('%s_%s', $idPrefix, $settings->honeypotFieldName),
+								'autocomplete' => 'off',
+								'tabindex' => '-1',
+								'style' => 'display:none; visibility:hidden; position:absolute; left:-9999px;',
+							],
+						);
+					}
 
-		if ($settings->honeypotFieldName !== null) {
-			$inputs[] = Html::textInput(
-				$settings->honeypotFieldName,
-				'',
-				[
-					'id' => sprintf('%s_%s', $idPrefix, $settings->honeypotFieldName),
-					'autocomplete' => 'off',
-					'tabindex' => '-1',
-					'style' => 'display:none; visibility:hidden; position:absolute; left:-9999px;',
-				],
-			);
-		}
+					if ($settings->timetrapFieldName !== null) {
+						$timestamp = (new \DateTimeImmutable())->format('Uv');
+						$encryptedTimestamp = base64_encode(Craft::$app->getSecurity()->encryptByKey($timestamp));
 
-		if ($settings->timetrapFieldName !== null) {
-			$timestamp = (new \DateTimeImmutable())->format('Uv');
-			$encryptedTimestamp = base64_encode(Craft::$app->getSecurity()->encryptByKey($timestamp));
+						if ($settings->setTimetrapWithJs) {
+							$jsInputId = sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName);
+							$inputs[] = Html::hiddenInput(
+								$settings->timetrapFieldName,
+								'',
+								[
+									'id' => $jsInputId,
+								],
+							);
 
-			if ($settings->setTimetrapWithJs) {
-				$jsInputId = sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName);
-				$inputs[] = Html::hiddenInput(
-					$settings->timetrapFieldName,
-					'',
-					[
-						'id' => $jsInputId,
-					],
-				);
+							$jsTimeout = $settings->jsTimeout ?? Plugin::DEFAULT_JS_TIMEOUT;
 
-				$jsTimeout = $settings->jsTimeout ?? Plugin::DEFAULT_JS_TIMEOUT;
-
-				$inputs[] = <<<EOJS
+							$inputs[] = <<<EOJS
 <script type="text/javascript">
 	setTimeout(function () {
 		document.getElementById('{$jsInputId}').value = '{$encryptedTimestamp}';
 	}, {$jsTimeout});
 </script>
 EOJS;
-			} else {
-				$inputs[] = Html::hiddenInput(
-					$settings->timetrapFieldName,
-					$encryptedTimestamp,
-					[
-						'id' => sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName),
-					],
-				);
-			}
-		}
+						} else {
+							$inputs[] = Html::hiddenInput(
+								$settings->timetrapFieldName,
+								$encryptedTimestamp,
+								[
+									'id' => sprintf('%s_%s', $idPrefix, $settings->timetrapFieldName),
+								],
+							);
+						}
+					}
 
-		return implode('', $inputs);
+					return implode('', $inputs);
+				},
+				[
+					'is_safe' => ['html'],
+				],
+			),
+		];
 	}
 }

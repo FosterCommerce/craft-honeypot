@@ -2,6 +2,7 @@
 	"name": "fostercommerce/craft-honeypot",
 	"type": "craft-plugin",
 	"license": "proprietary",
+	"version": "1.0.0",
 	"support": {
 		"email": "support@fostercommerce.com",
 		"issues": "https://github.com/fostercommerce/craft-honeypot/issues?state=open",
@@ -18,8 +19,7 @@
 		"craftcms/rector": "dev-main",
 		"fostercommerce/ecs": "dev-main",
 		"fostercommerce/phpstan": "dev-main",
-		"fostercommerce/rector": "dev-main",
-		"verbb/formie": "^2.0.0|^3.0.0"
+		"fostercommerce/rector": "dev-main"
 	},
 	"autoload": {
 		"psr-4": {
@@ -47,3 +47,4 @@
 		"rector:dry-run": "rector process --dry-run --config rector.php"
 	}
 }
+
