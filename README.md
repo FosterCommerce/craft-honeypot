@@ -33,3 +33,7 @@ composer require fostercommerce/craft-honeypot
 # tell Craft to install the plugin
 ./craft plugin/install honeypot
 ```
+
+## Formie
+
+With Formie installed, enable **Craft Honeypot** under **Formie -> Settings -> Captchas**, then enable it in the form's integration settings.
